@@ -1,0 +1,476 @@
+﻿@model IEnumerable<PTM2._0.Models.Venue>
+@using System.ComponentModel;
+
+@{
+    ViewData["Title"] = "场馆管理";
+    var searchTerm = Context.Request.Query["searchTerm"].ToString();
+    var sortOrder = Context.Request.Query["sortOrder"].ToString();
+
+    // 确定当前排序状态
+    bool isNameAsc = sortOrder == "name_asc";
+    bool isNameDesc = sortOrder == "name_desc";
+    bool isCapacityAsc = sortOrder == "capacity_asc";
+    bool isCapacityDesc = sortOrder == "capacity_desc" || string.IsNullOrEmpty(sortOrder);
+}
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - PTM2.0</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #70c1ff;
+            --secondary: #a8d8ff;
+            --accent-pink: #ff9bb3;
+            --accent-yellow: #ffde7d;
+            --dark: #1a2337;
+            --light: #f8f9fa;
+            --success: #6dd3b1;
+            --warning: #ffde7d;
+            --danger: #ff6b6b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--dark) 0%, #1e3a5a 100%);
+            color: white;
+            min-height: 100vh;
+            background-attachment: fixed;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin: 20px 0;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .dashboard-title {
+            font-size: 2.2rem;
+            margin: 0 0 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-weight: 600;
+        }
+
+            .dashboard-title::after {
+                content: "";
+                flex: 1;
+                height: 2px;
+                background: linear-gradient(to right, var(--primary), transparent);
+                margin-left: 15px;
+            }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+            .header-section h2 {
+                font-size: 1.8rem;
+                font-weight: 500;
+                margin: 0;
+                color: var(--primary);
+            }
+
+        .order-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+            .order-table th {
+                text-align: left;
+                padding: 18px 15px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                font-weight: 600;
+                background-color: rgba(255, 255, 255, 0.05);
+                font-size: 1.1rem;
+                color: white;
+            }
+
+            .order-table td {
+                padding: 16px 15px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                transition: all 0.3s ease;
+            }
+
+            .order-table tr:last-child td {
+                border-bottom: none;
+            }
+
+            .order-table tr:hover td {
+                background: rgba(255, 255, 255, 0.08);
+                transform: translateY(-1px);
+            }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 10px 22px;
+            border-radius: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            gap: 8px;
+        }
+
+            .btn:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+            }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--secondary);
+            color: var(--secondary);
+            
+        }
+
+            .btn-outline:hover {
+                background: rgba(168, 216, 255, 0.15);
+            }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-sort-container {
+            display: flex;
+            margin-bottom: 25px;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            position: relative;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+            .search-box input {
+                flex: 1;
+                padding: 12px 20px 12px 45px;
+                border-radius: 50px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                transition: all 0.3s ease;
+                font-size: 1rem;
+            }
+
+                .search-box input:focus {
+                    background: rgba(255, 255, 255, 0.15);
+                    border-color: var(--accent-pink);
+                    box-shadow: 0 0 0 0.25rem rgba(255, 155, 179, 0.25);
+                    outline: none;
+                }
+
+        .search-icon {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.1rem;
+        }
+
+        .sort-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.9);
+            padding: 10px 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+            .sort-btn:hover {
+                background: rgba(255, 255, 255, 0.2);
+                border-color: var(--accent-pink);
+            }
+
+            .sort-btn.active {
+                background: rgba(112, 193, 255, 0.2);
+                border-color: var(--primary);
+                color: white;
+            }
+
+        .venue-name {
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 1.15rem;
+        }
+
+        .venue-address {
+            font-size: 0.95rem;
+            opacity: 0.85;
+            margin-top: 6px;
+            color: white;
+        }
+
+        .capacity-value {
+            font-weight: 600;
+            color: white;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 25px 0;
+            opacity: 0.7;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 20px;
+            font-size: 0.95rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+            .empty-state i {
+                font-size: 4rem;
+                margin-bottom: 20px;
+                color: var(--primary);
+                opacity: 0.3;
+            }
+
+            .empty-state h3 {
+                font-weight: 500;
+                margin-bottom: 15px;
+                color: rgba(255, 255, 255, 0.8);
+            }
+
+
+        .sort-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .sort-btn {
+            flex: 1;
+            text-align: center;
+            justify-content: center;
+        }
+
+        .action-buttons {
+            flex-wrap: wrap;
+        }
+
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="glass-card">
+            <div class="dashboard-title">
+                <i class="fas fa-landmark"></i>
+                <span>场馆管理系统</span>
+            </div>
+
+            <div class="header-section">
+                <h2>场馆列表</h2>
+                <!-- index页面中的新建场馆按钮 -->
+                <a asp-action="Create" class="btn" id="openCreateModal">
+                    <i class="fa fa-plus"></i>新建场馆
+                </a>
+            </div>
+
+            <!-- 搜索框和排序按钮 -->
+            <div class="search-sort-container">
+                <!-- 搜索表单 -->
+                <form method="get" action="@Url.Action("Index")" class="search-box" id="searchForm">
+                    <div style="position: relative; flex: 1;">
+                        <i class="fa fa-search search-icon"></i>
+                        <input type="text" name="searchTerm" placeholder="搜索场馆名称或地址..."
+                               value="@searchTerm" id="searchInput" class="form-control" />
+                    </div>
+                    <button type="submit" class="btn">
+                        <i class="fa fa-search"></i> 搜索
+                    </button>
+                </form>
+
+                <!-- 排序链接 -->
+                <div class="sort-buttons">
+                    @{
+                        // 名称排序链接
+                        var nameSortParams = new Dictionary<string, string> { { "searchTerm", searchTerm } };
+                        var nameSortOrder = isNameAsc ? "name_desc" : "name_asc";
+                        var nameSortText = isNameAsc ? "名称降序" : "名称升序";
+                        var nameSortIcon = isNameAsc ? "fa-sort-alpha-down" : "fa-sort-alpha-up";
+                        nameSortParams["sortOrder"] = nameSortOrder;
+                        <a href="@Url.Action("Index", nameSortParams)" class="sort-btn @(sortOrder == nameSortOrder ? "active" : "")">
+                            <i class="fa @nameSortIcon"></i>
+                            <span>@nameSortText</span>
+                        </a>
+
+                        // 容量排序链接
+                        var capacitySortParams = new Dictionary<string, string> { { "searchTerm", searchTerm } };
+                        var capacitySortOrder = isCapacityAsc ? "capacity_desc" : "capacity_asc";
+                        var capacitySortText = isCapacityAsc ? "容量降序" : "容量升序";
+                        var capacitySortIcon = isCapacityAsc ? "fa-sort-amount-down" : "fa-sort-amount-up";
+                        capacitySortParams["sortOrder"] = capacitySortOrder;
+                        <a href="@Url.Action("Index", capacitySortParams)" class="sort-btn @(sortOrder == capacitySortOrder ? "active" : "")">
+                            <i class="fa @capacitySortIcon"></i>
+                            <span>@capacitySortText</span>
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <!-- 场馆列表表格 -->
+            @if (Model.Any())
+            {
+                <table class="order-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>场馆名称</th>
+                            <th>地址</th>
+                            <th>容量</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.VenueID</td>
+                                <td>
+                                    <div class="venue-name">@item.VenueName</div>
+                                </td>
+                                <td>
+                                    <div class="venue-address">@item.VenueAddress</div>
+                                </td>
+                                <td>
+                                    <div class="capacity-value">@item.Capacity 人</div>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a asp-action="Details" asp-route-id="@item.VenueID" class="btn btn-outline">
+                                            <i class="fa fa-eye"></i> 
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@item.VenueID" class="btn btn-outline">
+                                            <i class="fa fa-edit"></i>
+                                        </a>
+                                        <a asp-action="Delete" asp-route-id="@item.VenueID" class="btn btn-outline">
+                                            <i class="fa fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <h3>没有找到场馆数据</h3>
+                    <p>尝试不同的搜索条件或创建新场馆</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>© 2025 演出票务管理系统 | 场馆管理模块</p>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // 支持回车键搜索
+            $('#searchInput').on('keypress', function (e) {
+                if (e.which === 13) {
+                    $('#searchForm').submit();
+                }
+            });
+
+            // 显示当前搜索条件
+            const searchTerm = "@searchTerm";
+            if (searchTerm) {
+                $('#searchInput').addClass('has-value');
+            }
+
+            // 显示当前排序状态
+            const sortOrder = "@sortOrder";
+            if (sortOrder) {
+                $(`.sort-btn[href*="${sortOrder}"]`).addClass('active');
+            }
+
+            // 点击"新建场馆"按钮打开模态框
+           // 点击"新建场馆"按钮打开模态框
+            $('#openCreateModal').on('click', function(e) {
+                e.preventDefault(); // 阻止默认跳转行为
+                loadCreateModal();
+            });
+        });
+
+        // 加载整个Create模态框
+        function loadCreateModal() {
+            $.ajax({
+                url: '@Url.Action("Create")',
+                type: 'GET',
+                success: function(html) {
+                    // 将整个响应内容添加到body中
+                    $('body').append(html);
+                    // 初始化模态框
+                    $('#createVenueModal').modal('show');
+
+                    // 模态框关闭后移除它
+                    $('#createVenueModal').on('hidden.bs.modal', function () {
+                        $(this).remove();
+                    });
+
+                    // 初始化表单交互
+                    initVenueFormInteractions();
+                },
+                error: function() {
+                    alert('加载新建场馆表单失败，请稍后再试');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

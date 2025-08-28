@@ -1,0 +1,311 @@
+﻿@using Microsoft.AspNetCore.Http
+@using PTM2._0.Extensions
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    var userId = HttpContextAccessor.HttpContext.Session.GetInt32("UserID");
+    var userName = HttpContextAccessor.HttpContext.Session.GetString("UserName");
+    var isAdmin = HttpContextAccessor.HttpContext.Session.GetBool("IsAdmin");
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? ""; // 获取当前动作名称
+
+    // 需要隐藏导航栏的页面（登录、注册）
+    var hideNavbar = currentController.Equals("login", StringComparison.OrdinalIgnoreCase) &&
+                    (currentAction.Equals("index", StringComparison.OrdinalIgnoreCase) ||
+                     currentAction.Equals("register", StringComparison.OrdinalIgnoreCase));
+
+    // 判断是否为订单图表页面
+    var isOrdersChartsPage = currentController.Equals("orders", StringComparison.OrdinalIgnoreCase) &&
+                            currentAction.Equals("charts", StringComparison.OrdinalIgnoreCase);
+}
+
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - 演出售票管理系统</title>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <style>
+        /* 蓝色系导航栏样式 */
+        .navbar {
+            background: linear-gradient(135deg,#AED7F8, #8ABDE6);
+            box-shadow: 0 4px 20px rgba(26, 86, 219, 0.2);
+            transition: all 0.3s ease;
+            position: sticky;
+            top: 0;
+            z-index: 100; /* 提高层级，确保在模态框之上 */
+        }
+
+        .navbar-brand, .navbar-nav .nav-link {
+            color: white !important;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+        }
+
+            .navbar-brand:hover, .navbar-nav .nav-link:hover {
+                color: #3F95DB !important; /* 深蓝色高光 */
+                transform: translateY(-2px);
+            }
+
+                .navbar-brand:hover::after, .navbar-nav .nav-link:hover::after {
+                    content: '';
+                    position: absolute;
+                    bottom: -5px;
+                    left: 0;
+                    width: 100%;
+                    height: 2px;
+                    background-color: #3F95DB;
+                    border-radius: 2px;
+                }
+
+        .navbar-toggler {
+            border-color: white;
+        }
+
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='30' height='30' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.8)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
+        /* 下拉菜单样式 */
+        .dropdown-menu {
+            border: none;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.1);
+            margin-top: 0.2rem;
+            animation: dropdownFadeIn 0.3s ease;
+        }
+
+        .dropdown-item {
+            color: #334155;
+            transition: all 0.2s ease;
+        }
+
+            .dropdown-item:hover {
+                background-color: #86C5F8;
+                color: #3F95DB;
+                padding-left: 1.5rem;
+            }
+
+        .dropdown-divider {
+            margin: 0.5rem 0;
+            background-color: #bfdbfe;
+        }
+
+        /* 激活状态样式 */
+        .nav-item.active .nav-link {
+            color: #3F95DB !important;
+        }
+
+            .nav-item.active .nav-link::after {
+                content: '';
+                position: absolute;
+                bottom: -5px;
+                left: 0;
+                width: 100%;
+                height: 2px;
+                background-color: #3F95DB;
+                border-radius: 2px;
+            }
+
+        /* 管理员菜单特殊样式 */
+        .admin-menu .nav-link {
+            color: #3F95DB !important;
+            font-weight: 600;
+        }
+
+            .admin-menu .nav-link::before {
+                content: '⚙️';
+                margin-right: 5px;
+            }
+
+        .navbar-nav .nav-link {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+
+        .admin-menu .nav-link::before {
+            display: none;
+        }
+
+        /* 确保导航栏下拉菜单可见 */
+        .navbar-nav .dropdown-menu {
+            z-index: 1060; /* 比导航栏的1050更高 */
+            display: none; /* 默认隐藏 */
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .navbar-nav .dropdown:hover .dropdown-menu {
+            display: block; /* 鼠标悬停时显示 */
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 如果需要点击展开，使用JavaScript控制 */
+        .navbar-nav .dropdown.show .dropdown-menu {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    @if (!hideNavbar)
+    {
+        <header>
+            <nav class="navbar navbar-expand-sm navbar-toggleable-sm">
+                <div class="container-fluid">
+                    <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">演出售票管理系统</a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                        <ul class="navbar-nav flex-grow-1">
+                            <li class="nav-item @(currentController.Equals("Home", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">
+                                    <i class="fa fa-home mr-1"></i> 首页
+                                </a>
+                            </li>
+                            <li class="nav-item @(currentController.Equals("Orders", StringComparison.OrdinalIgnoreCase) && !isOrdersChartsPage ? "active" : "")">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Index">
+                                    <i class="fa fa-shopping-cart mr-1"></i> 订单
+                                </a>
+                            </li>
+                            <li class="nav-item @(currentController.Equals("Performances", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Performances" asp-action="Index">
+                                    <i class="fa fa-calendar mr-1"></i> 演出
+                                </a>
+                            </li>
+                            <li class="nav-item @(currentController.Equals("Tickets", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Tickets" asp-action="Index">
+                                    <i class="fa fa-ticket mr-1"></i> 门票
+                                </a>
+                            </li>
+                            <li class="nav-item @(currentController.Equals("Venues", StringComparison.OrdinalIgnoreCase) ? "active" : "")">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Venues" asp-action="Index">
+                                    <i class="fa fa-building mr-1"></i> 场馆
+                                </a>
+                            </li>
+                            <li class="nav-item @(isOrdersChartsPage ? "active" : "")">
+                                <a class="nav-link text-dark" asp-controller="Orders" asp-action="Charts">
+                                    <i class="fa fa-chart-pie me-1"></i>订单图表
+                                </a>
+                            </li>
+                        </ul>
+                        <ul class="navbar-nav">
+                            @if (userId.HasValue)
+                            {
+                                @if (isAdmin)
+                                {
+                                    <li class="nav-item admin-menu">
+                                        <a class="nav-link text-dark" asp-controller="Admin" asp-action="Index">
+                                            管理面板
+                                        </a>
+                                    </li>
+                                }
+
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fa fa-user-circle mr-1"></i> @userName
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Users" asp-action="Index">
+                                                <i class="fa fa-user mr-1"></i> 个人资料
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Orders" asp-action="Index">
+                                                <i class="fa fa-list mr-1"></i> 我的订单
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form asp-controller="Login" asp-action="Logout" method="post">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="dropdown-item">
+                                                    <i class="fa fa-sign-out mr-1"></i> 退出登录
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-controller="Login" asp-action="Index">
+                                        <i class="fa fa-sign-in mr-1"></i> 登录
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-controller="Login" asp-action="Register">
+                                        <i class="fa fa-user-plus mr-1"></i> 注册
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+        </header>
+    }
+    <div class="container">
+        @if (TempData["SuccessMessage"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+                @TempData["SuccessMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @if (TempData["ErrorMessage"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+                @TempData["ErrorMessage"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        // 导航栏滚动效果
+        $(window).scroll(function() {
+            if ($(this).scrollTop() > 50) {
+                $('.navbar').css('padding', '0.5rem 0');
+                $('.navbar').css('box-shadow', '0 4px 15px rgba(15, 23, 42, 0.15)');
+            } else {
+                $('.navbar').css('padding', '1rem 0');
+                $('.navbar').css('box-shadow', '0 4px 20px rgba(26, 86, 219, 0.2)');
+            }
+        });
+            // 初始化下拉菜单
+        document.addEventListener('DOMContentLoaded', function() {
+            var dropdowns = document.querySelectorAll('.dropdown-toggle');
+            dropdowns.forEach(function(dropdown) {
+                new bootstrap.Dropdown(dropdown);
+            });
+        });
+    </script>
+    @await RenderSectionAsync("scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,339 @@
+﻿@{
+    ViewData["Title"] = "订单数据图表";
+}
+
+<!-- 引入外部资源 -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    /* 基础样式定义 */
+    body {
+        background-color: #1e3a5a;
+        color: #fff;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .glass-card {
+        background: rgba(30, 58, 90, 0.8);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        padding: 30px;
+        text-align: center;
+    }
+
+    .dashboard-title {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 30px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        max-width: 800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+        .dashboard-title i {
+            font-size: 24px;
+            color: #188df0;
+            margin-right: 15px;
+        }
+
+        .dashboard-title h2 {
+            font-size: 22px;
+            font-weight: 600;
+            color: #fff;
+            margin: 0;
+        }
+
+    .chart-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .chart-item {
+        width: 100%;
+        max-width: 600px;
+    }
+
+        .chart-item h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+</style>
+
+<div class="container">
+    <div class="glass-card" style="background:#2D4A6B">
+        <div class="dashboard-title">
+            <i class="fa fa-chart-bar"></i>
+            <h2>订单数据可视化图表</h2>
+        </div>
+
+        <!-- 图表区域布局 -->
+        <div class="row" >
+            <div class="col-md-6">
+                <div id="dailySalesChart" style="height: 400px;"></div>
+            </div>
+            <div class="col-md-6">
+                <div id="performanceSalesChart" style="height: 400px;"></div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div id="userPurchasesChart" style="height: 400px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/echarts/echarts.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // 图表初始化
+            const dailySalesChart = echarts.init(document.getElementById('dailySalesChart'));
+            const performanceSalesChart = echarts.init(document.getElementById('performanceSalesChart'));
+            const userPurchasesChart = echarts.init(document.getElementById('userPurchasesChart'));
+
+            // 设置所有图表背景透明
+            [dailySalesChart, performanceSalesChart, userPurchasesChart].forEach(chart => {
+                chart.setOption({ backgroundColor: 'transparent' });
+            });
+
+            // 显示加载状态
+            dailySalesChart.showLoading();
+            performanceSalesChart.showLoading();
+            userPurchasesChart.showLoading();
+
+            // 每日销售额图表
+            $.ajax({
+                url: "/api/OrdersApi/DailySales",
+                type: "GET",
+                success: function (data) {
+                    dailySalesChart.hideLoading();
+                    dailySalesChart.setOption({
+                        title: {
+                            text: '近30天每日销售额',
+                            left: 'center',
+                            top: 10,
+                            textStyle: { color: '#fff' }
+                        },
+                        tooltip: {
+                            trigger: 'axis',
+                            formatter: function (params) {
+                                return params[0].name + '<br/>销售额: ¥' + params[0].value.toFixed(2);
+                            }
+                        },
+                        grid: {
+                            left: '3%',
+                            right: '4%',
+                            bottom: '3%',
+                            containLabel: true
+                        },
+                        xAxis: {
+                            type: 'category',
+                            data: data.dates,
+                            axisLabel: {
+                                rotate: 45,
+                                color: '#fff'
+                            }
+                        },
+                        yAxis: {
+                            type: 'value',
+                            name: '金额(元)',
+                            nameTextStyle: { color: '#fff' },
+                            axisLabel: {
+                                formatter: '¥{value}',
+                                color: '#fff'
+                            },
+                            splitLine: {
+                                lineStyle: {
+                                    color: 'rgba(255,255,255,0.1)'
+                                }
+                            }
+                        },
+                        series: [{
+                            name: '销售额',
+                            type: 'line',
+                            data: data.amounts,
+                            itemStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: '#83bff6' },
+                                    { offset: 0.5, color: '#188df0' },
+                                    { offset: 1, color: '#188df0' }
+                                ])
+                            },
+                            lineStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: '#83bff6' },
+                                    { offset: 0.5, color: '#188df0' },
+                                    { offset: 1, color: '#188df0' }
+                                ])
+                            },
+                            emphasis: {
+                                itemStyle: {
+                                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                        { offset: 0, color: '#2378f7' },
+                                        { offset: 0.7, color: '#2378f7' },
+                                        { offset: 1, color: '#83bff6' }
+                                    ])
+                                }
+                            }
+                        }]
+                    });
+                },
+                error: function() {
+                    dailySalesChart.hideLoading();
+                    dailySalesChart.setOption({
+                        title: {
+                            text: '数据加载失败',
+                            textStyle: { color: '#fff' }
+                        },
+                        graphic: {
+                            type: 'text',
+                            left: 'center',
+                            top: 'middle',
+                            style: {
+                                text: '无法加载数据',
+                                fontSize: 16,
+                                fill: '#ff6e76'
+                            }
+                        }
+                    });
+                }
+            });
+
+            // 演出销售图表
+            $.ajax({
+                url: "/api/OrdersApi/PerformanceSales",
+                type: "GET",
+                success: function (data) {
+                    performanceSalesChart.hideLoading();
+                    performanceSalesChart.setOption({
+                        title: {
+                            text: '演出销售额占比',
+                            left: 'center',
+                            top: 10,
+                            textStyle: { color: '#fff' }
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: '{b}: ¥{c} ({d}%)'
+                        },
+                        legend: {
+                            orient: 'horizontal',
+                            bottom: 0,
+                            left: 'center',
+                            textStyle: { color: '#fff' }
+                        },
+                        series: [{
+                            name: '销售额',
+                            type: 'pie',
+                            radius: ['50%', '70%'],
+                            avoidLabelOverlap: false,
+                            label: {
+                                show: false,
+                                position: 'center',
+                                color: '#fff'
+                            },
+                            emphasis: {
+                                label: {
+                                    show: true,
+                                    fontSize: '18',
+                                    fontWeight: 'bold',
+                                    color: '#fff'
+                                }
+                            },
+                            labelLine: { show: false },
+                            data: data.names.map((name, index) => ({
+                                name,
+                                value: data.values[index]
+                            })),
+                            itemStyle: {
+                                color: (params) => {
+                                    const colorList = [
+                                        '#5470c6', '#91cc75', '#fac858', '#ee6666',
+                                        '#73c0de', '#3ba272', '#fc8452', '#9a60b4',
+                                        '#ea7ccc', '#60b9ae', '#d7504b', '#c6e579'
+                                    ];
+                                    return colorList[params.dataIndex % colorList.length];
+                                }
+                            }
+                        }]
+                    });
+                }
+            });
+
+            // 用户消费图表
+            $.ajax({
+                url: "/api/OrdersApi/UserPurchases",
+                type: "GET",
+                success: function (data) {
+                    userPurchasesChart.hideLoading();
+                    userPurchasesChart.setOption({
+                        title: {
+                            text: '用户消费占比 (Top 10)',
+                            left: 'center',
+                            top: 10,
+                            textStyle: { color: '#fff' }
+                        },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: '{b}: ¥{c} ({d}%)'
+                        },
+                        legend: {
+                            orient: 'horizontal',
+                            bottom: 0,
+                            left: 'center',
+                            textStyle: { color: '#fff' }
+                        },
+                        series: [{
+                            name: '消费金额',
+                            type: 'pie',
+                            radius: '55%',
+                            center: ['40%', '50%'],
+                            data: data.names.map((name, index) => ({
+                                name,
+                                value: data.values[index]
+                            })),
+                            emphasis: {
+                                itemStyle: {
+                                    shadowBlur: 10,
+                                    shadowOffsetX: 0,
+                                    shadowColor: 'rgba(0, 0, 0, 0.5)'
+                                }
+                            },
+                            itemStyle: {
+                                color: (params) => {
+                                    const colorList = [
+                                        '#5470c6', '#91cc75', '#fac858', '#ee6666',
+                                        '#73c0de', '#3ba272', '#fc8452', '#9a60b4',
+                                        '#ea7ccc', '#60b9ae'
+                                    ];
+                                    return colorList[params.dataIndex % colorList.length];
+                                }
+                            }
+                        }]
+                    });
+                }
+            });
+
+            // 窗口大小变化响应
+            window.addEventListener('resize', () => {
+                dailySalesChart.resize();
+                performanceSalesChart.resize();
+                userPurchasesChart.resize();
+            });
+        });
+    </script>
+}

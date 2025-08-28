@@ -1,0 +1,191 @@
+﻿@model PTM2._0.Models.Venue
+
+@{
+    ViewData["Title"] = "删除场馆";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    a {
+        text-decoration: none;
+    }
+
+    :root {
+        --primary: #70c1ff;
+        --secondary: #a8d8ff;
+        --accent-pink: #ff9bb3;
+        --accent-yellow: #ffde7d;
+        --dark: #1a2337;
+        --light: #f8f9fa;
+        --success: #6dd3b1;
+        --warning: #ffde7d;
+        --danger: #ff6b6b;
+    }
+
+    body {
+        background: linear-gradient(135deg, var(--dark) 0%, #1e3a5a 100%);
+        color: var(--light);
+        min-height: 100vh;
+        background-attachment: fixed;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 30px 20px;
+    }
+
+    .glass-card {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 15px;
+        padding: 30px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        margin: 30px 0;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .dashboard-title {
+        font-size: 2rem;
+        margin: 0 0 25px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+        .dashboard-title::after {
+            content: "";
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(to right, var(--accent-pink), transparent);
+        }
+
+    .details-card {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+
+    .detail-row {
+        display: flex;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+    .detail-label {
+        width: 30%;
+        font-weight: 600;
+        color: var(--secondary);
+    }
+
+    .detail-value {
+        width: 70%;
+        color: var(--light);
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 25px;
+    }
+
+    .btn-danger {
+        background: linear-gradient(135deg, var(--danger), #ff5252);
+        border: none;
+        color: white;
+        padding: 10px 25px;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(255, 98, 98, 0.2);
+        }
+
+    .btn-back {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+        padding: 10px 25px;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+    .warning-message {
+        background: rgba(255, 222, 125, 0.1);
+        border-left: 4px solid var(--accent-yellow);
+        padding: 15px 20px;
+        border-radius: 5px;
+        margin-bottom: 25px;
+        color: var(--accent-yellow);
+    }
+
+    .capacity-badge {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        display: inline-block;
+        background: rgba(110, 211, 177, 0.2);
+        color: var(--success);
+    }
+</style>
+
+<div class="container">
+    <div class="glass-card">
+        <div class="dashboard-title">
+            <i class="fa fa-trash text-danger"></i>
+            <span>删除场馆</span>
+        </div>
+
+        <div class="warning-message">
+            <i class="fa fa-exclamation-triangle mr-2"></i>
+            <strong>警告：</strong>您确定要删除此场馆吗？此操作将同时删除所有关联的演出和门票，且无法撤销！
+        </div>
+
+        <div class="details-card">
+            <h3 class="mb-4">场馆信息</h3>
+            <div class="detail-row">
+                <div class="detail-label">场馆名称</div>
+                <div class="detail-value">@Html.DisplayFor(model => model.VenueName)</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">场馆地址</div>
+                <div class="detail-value">@Html.DisplayFor(model => model.VenueAddress)</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">场馆容量</div>
+                <div class="detail-value">
+                    <span class="capacity-badge">@Html.DisplayFor(model => model.Capacity) 人</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <form asp-action="Delete">
+                <input type="hidden" asp-for="VenueID" />
+                <button type="submit" class="btn-danger">
+                    <i class="fa fa-trash mr-2"></i>确认删除
+                </button>
+            </form>
+            <a asp-action="Index" class="btn-back">
+                <i class="fa fa-arrow-left mr-2"></i>返回列表
+            </a>
+        </div>
+    </div>
+</div>
